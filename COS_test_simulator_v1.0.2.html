@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COS102 :: Exam Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E2A47;
+    --ink-2:#123356;
+    --grid-line: rgba(111,168,220,0.16);
+    --grid-line-strong: rgba(111,168,220,0.35);
+    --paper:#EAF2FA;
+    --paper-dim:#B9CEE3;
+    --amber:#F2A93B;
+    --amber-dim:#c98f30;
+    --teal:#4FD1B0;
+    --red:#E2543F;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--sans);
+    
+    background-color: var(--ink);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(79, 209, 176, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(242, 169, 59, 0.1) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(18, 51, 86, 0.8) 0px, transparent 80%);
+    background-attachment: fixed;
+    color:var(--paper);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:32px 16px 64px;
+  }
+  .sheet{
+    width:100%;
+    max-width:760px;
+    position:relative;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--amber);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background:var(--amber);
+    display:inline-block;
+    transform:rotate(45deg);
+  }
+  h1{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(28px,5vw,40px);
+    margin:0 0 6px;
+    color:var(--paper);
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--paper-dim);
+    font-size:15px;
+    max-width:52ch;
+    line-height:1.5;
+    margin-bottom:36px;
+  }
+
+  .flow{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .node{
+    position:relative;
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(234,242,250,0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding:24px 26px;
+    margin-bottom:0;
+  }
+  .node-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .node-label .tag{
+    width:18px;height:18px;
+    border:1.5px solid var(--amber);
+    transform:rotate(45deg);
+    flex-shrink:0;
+  }
+  .connector{
+    width:1.5px;
+    height:28px;
+    background:var(--grid-line-strong);
+    margin-left:32px;
+    position:relative;
+  }
+  .connector::after{
+    content:"";
+    position:absolute;
+    bottom:0; left:50%;
+    transform:translateX(-50%);
+    border-left:5px solid transparent;
+    border-right:5px solid transparent;
+    border-top:6px solid var(--grid-line-strong);
+  }
+
+  .option-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(90px,1fr));
+    gap:10px;
+  }
+  .pill{
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:600;
+    padding:14px 10px;
+    text-align:center;
+    border:1.5px solid var(--grid-line-strong);
+    background:transparent;
+    color:var(--paper);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .pill:hover{ border-color:var(--amber); background:rgba(242,169,59,0.04); }
+  .pill.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--ink);
+  }
+  .pill small{ display:block; font-weight:400; font-size:10px; opacity:.75; margin-top:2px; }
+
+  .custom-row{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+  }
+  .custom-row input{
+    font-family:var(--mono);
+    background:transparent;
+    border:1.5px solid var(--grid-line-strong);
+    color:var(--paper);
+    padding:12px 14px;
+    width:100px;
+    font-size:14px;
+  }
+  .custom-row input:focus{ outline:none; border-color:var(--amber); }
+  .custom-row label{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    align-self:center;
+  }
+
+  .run-btn{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    width:100%;
+    padding:20px;
+    margin-top:28px;
+    background:var(--amber);
+    color:var(--ink);
+    border:none;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:background .15s ease;
+  }
+  .run-btn:hover{ background:#ffbe57; }
+  .run-btn:disabled{ background:#3a4a5c; color:var(--paper-dim); cursor:not-allowed; }
+  .run-btn .arrow{ font-size:18px; }
+
+  .meta-note{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    margin-top:14px;
+    text-align:center;
+  }
+
+
+  .exam-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .timer{
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:700;
+    color:var(--amber);
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(14,42,71,0.5);
+    backdrop-filter: blur(4px);
+    padding:8px 18px;
+    letter-spacing:0.05em;
+  }
+  .timer.warn{ color:var(--red); border-color:var(--red); animation:pulse 1s infinite; }
+  @keyframes pulse{ 50%{opacity:.5;} }
+
+  .progress-trail{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-bottom:24px;
+  }
+  .dot{
+    width:12px;height:12px;
+    border:1.5px solid var(--grid-line-strong);
+    transform:rotate(45deg);
+    flex-shrink:0;
+  }
+  .dot.answered{ background:var(--amber); border-color:var(--amber); }
+  .dot.current{ border-color:var(--paper); }
+
+  .qcard{
+    border:1.5px solid var(--grid-line-strong);
+    padding:30px 28px;
+    background:rgba(234,242,250,0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .qnum{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--amber);
+    letter-spacing:0.12em;
+    margin-bottom:12px;
+  }
+  .qtext{
+    font-size:19px;
+    line-height:1.5;
+    font-weight:600;
+    margin-bottom:24px;
+  }
+  .choices{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .choice{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:14px 16px;
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(14,42,71,0.2);
+    cursor:pointer;
+    transition:all .12s ease;
+  }
+  .choice:hover{ border-color:var(--amber); background:rgba(242,169,59,0.06); }
+  .choice.selected{ border-color:var(--amber); background:rgba(242,169,59,0.12); }
+  .choice .letter{
+    font-family:var(--mono);
+    font-weight:700;
+    color:var(--paper-dim);
+    flex-shrink:0;
+  }
+  .choice.selected .letter{ color:var(--amber); }
+  .choice .txt{ line-height:1.4; font-size:15px; }
+  .choice.correct-instant{ border-color:var(--teal); background:rgba(79,209,176,0.14); }
+  .choice.correct-instant .letter{ color:var(--teal); }
+  .choice.wrong-instant{ border-color:var(--red); background:rgba(226,84,63,0.14); }
+  .choice.wrong-instant .letter{ color:var(--red); }
+
+  .instant-feedback{
+    margin-top:16px;
+    padding:14px 16px;
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(234,242,250,0.03);
+    backdrop-filter: blur(4px);
+    font-size:14px;
+    line-height:1.5;
+  }
+  .instant-feedback.is-correct{ border-color:var(--teal); }
+  .instant-feedback.is-wrong{ border-color:var(--red); }
+  .instant-feedback .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    padding:2px 8px;
+    letter-spacing:0.05em;
+  }
+  .instant-feedback.is-correct .tag{ background:var(--teal); color:var(--ink); }
+  .instant-feedback.is-wrong .tag{ background:var(--red); color:var(--paper); }
+  .instant-feedback .correct-line{ margin-top:10px; color:var(--paper-dim); }
+  .instant-feedback .explain{ margin-top:8px; color:var(--paper-dim); font-style:italic; }
+
+  .toggle-row{ display:flex; gap:10px; }
+  .toggle-row .pill{ flex:1; }
+
+  .nav-row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:26px;
+    gap:12px;
+  }
+  .ghost-btn{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    background:rgba(14,42,71,0.3);
+    border:1.5px solid var(--grid-line-strong);
+    color:var(--paper-dim);
+    padding:14px 22px;
+    cursor:pointer;
+    backdrop-filter: blur(4px);
+  }
+  .ghost-btn:hover{ border-color:var(--paper); color:var(--paper); }
+  .ghost-btn:disabled{ opacity:.3; cursor:not-allowed; }
+
+
+  .score-block{
+    text-align:center;
+    padding:40px 20px;
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(234,242,250,0.02);
+    backdrop-filter: blur(8px);
+    margin-bottom:30px;
+  }
+  .score-num{
+    font-family:var(--mono);
+    font-size:64px;
+    font-weight:700;
+    color:var(--amber);
+    line-height:1;
+  }
+  .score-frac{
+    font-family:var(--mono);
+    color:var(--paper-dim);
+    font-size:16px;
+    margin-top:8px;
+  }
+  .score-verdict{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    margin-top:14px;
+    color:var(--teal);
+  }
+  .review-item{
+    border:1.5px solid var(--grid-line-strong);
+    background:rgba(234,242,250,0.02);
+    backdrop-filter: blur(8px);
+    padding:20px 22px;
+    margin-bottom:12px;
+  }
+  .review-item .qtext{ font-size:15px; margin-bottom:14px; }
+  .review-line{
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:6px;
+    display:flex;
+    gap:8px;
+  }
+  .review-line .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    padding:2px 8px;
+    flex-shrink:0;
+    height:fit-content;
+  }
+  .tag.correct{ background:var(--teal); color:var(--ink); }
+  .tag.wrong{ background:var(--red); color:var(--paper); }
+  .tag.info{ background:var(--grid-line-strong); color:var(--paper); }
+  .explain{ color:var(--paper-dim); font-size:13px; margin-top:6px; font-style:italic; }
+
+  .restart-btn{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    width:100%;
+    padding:18px;
+    margin-top:10px;
+    background:transparent;
+    border:1.5px solid var(--amber);
+    color:var(--amber);
+    cursor:pointer;
+    backdrop-filter: blur(4px);
+  }
+  .restart-btn:hover{ background:var(--amber); color:var(--ink); }
+
+  ::selection{ background:var(--amber); color:var(--ink); }
+
+  @media (max-width:480px){
+    .node{ padding:18px 16px; }
+    .qcard{ padding:22px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet" id="app"></div>
+
+<script>
+const BANK = [
+["Computing is fundamentally about ____.", ["Gaming","Problem solving","Typing","Networking"], 1, ""],
+["Raw facts without meaning are called ____.", ["Information","Data","Algorithm","Program"], 1, ""],
+["A finite sequence of steps to solve a problem is called ____.", ["Data","Program","Algorithm","Code"], 2, ""],
+["A problem has how many components?", ["2","3","4","5"], 1, ""],
+["Which is NOT a component of a problem?", ["Initial state","Goal state","Obstacles","Syntax"], 3, ""],
+["Routine problems are also called ____.", ["Ill-defined","Non-routine","Well-defined","Complex"], 2, ""],
+["Non-routine problems require ____.", ["Fixed rules","Creativity","No thinking","Simple steps"], 1, ""],
+["George Polya proposed ____ steps.", ["2","3","4","5"], 2, ""],
+["The first step in Polya's model is ____.", ["Devise a plan","Understand the problem","Look back","Execute"], 1, ""],
+["The final step in Polya's model is ____.", ["Reflect (Look back)","Plan","Test","Execute"], 0, ""],
+["A solvable problem is also called ____.", ["Decidable","Infinite","Heuristic","Abstract"], 0, ""],
+["The Halting Problem was introduced by ____.", ["Knuth","Turing","Hilbert","Euclid"], 1, ""],
+["Binary search runs in ____.", ["O(n)","O(log n)","O(n²)","O(2ⁿ)"], 1, ""],
+["Merge sort has complexity ____.", ["O(n log n)","O(n²)","O(log n)","O(2ⁿ)"], 0, ""],
+["TSP is generally ____ for large inputs.", ["Tractable","Intractable","Solvable easily","Linear"], 1, ""],
+["A heuristic gives ____.", ["Exact answers always","Good enough answers","No answer","Infinite answer"], 1, ""],
+["Which is NOT an algorithm property?", ["Finiteness","Definiteness","Ambiguity","Effectiveness"], 2, ""],
+["Euclid's algorithm is used for ____.", ["Sorting","Searching","GCD","Encryption"], 2, ""],
+["Abstraction means ____.", ["Adding details","Removing irrelevant details","Guessing","Testing"], 1, ""],
+["Analogy means solving a new problem using ____.", ["Randomness","Similar past problems","Coding","Guessing"], 1, ""],
+["Brainstorming emphasizes ____ first.", ["Quality","Quantity","Criticism","Testing"], 1, ""],
+["Trial and error is best when ____.", ["Search space is small","Problem is impossible","No solution exists","None"], 0, ""],
+["Hypothesis testing is based on ____.", ["Random guesses","Evidence","Luck","Emotion"], 1, ""],
+["Reduction means transforming a problem into ____.", ["A harder one","A known one","A random one","None"], 1, ""],
+["Lateral thinking was coined by ____.", ["Turing","Polya","Edward de Bono","Knuth"], 2, ""],
+["Means-end analysis reduces the ____ between states.", ["Difference","Code","Memory","Error"], 0, ""],
+["Tower of Hanoi is an example of ____.", ["Brainstorming","Means-end analysis","Trial and error","Reduction"], 1, ""],
+["The five properties of algorithms were articulated by ____.", ["Turing","Hilbert","Knuth","Euclid"], 2, ""],
+["Input in an algorithm can be ____.", ["Zero or more","Exactly one","Infinite","None"], 0, ""],
+["Output in an algorithm must be ____.", ["Optional","One or more","Zero","Infinite"], 1, ""],
+["From the perspective of a computer scientist, what lies at the very heart of computing?", ["Learning syntax of various programming languages","Solving problems through systematic, automatable processes","Manufacturing faster electronic machinery and hardware devices","Memorizing raw data structures and application architectures"], 1, "Computer science treats computers as tools; the central task is creating systematic processes to solve problems."],
+["Which core computing concept is correctly defined as \"raw facts, figures, or symbols that have no inherent meaning by themselves\"?", ["Information","Algorithm","Data","Program"], 2, "Data consists of raw, unprocessed values, which become information only after structuring makes them meaningful."],
+["In academic and computer science contexts, a problem is defined precisely by which three components?", ["Initial state, Goal state, and Obstacles/Constraints","Input variables, Code functions, and Compilers","Symptoms, Needs analysis, and Requirements elicitation","Abstraction, Brainstorming, and Top-down refinement"], 0, "A problem is mapped as a gap between a starting state and a desired endpoint under constraints."],
+["Which of the following represents a \"strong\" and well-formed problem statement?", ["\"Our university registration system is completely bad and slow.\"","\"The portal crashes frequently because too many concurrent users are access-heavy.\"","\"During peak periods, 2,000 students queue for an average of 4 hours because the portal can only handle 200 concurrent sessions. The goal is online registration within 15 minutes, under a ₦5,000,000 budget.\"","\"The system must be redesigned with full legal, ethical, and hardware updates as soon as possible.\""], 2, "Strong problem statements avoid vague metrics and list measurable criteria, resource boundaries, and exact scale."],
+["What distinguishes a routine (well-defined) problem from a non-routine (ill-defined) problem?", ["Routine problems require massive creativity; non-routine rely strictly on fixed formulas.","Routine problems have clear specifications and known systematic procedures that guarantee a correct solution.","Non-routine problems always have a single mathematically verified correct answer.","Computers can execute non-routine solutions directly without any transformation."], 1, "Routine problems allow deterministic algorithms; non-routine problems are ambiguous and require creative interpretation."],
+["A problem is classified as \"decidable\" or \"solvable\" if:", ["It can be processed by a supercomputer in less than one microsecond.","There exists an algorithm that, given any valid input, produces the correct output and always terminates in finite steps.","An expert can easily resolve it through a quick brainstorming exercise.","It can be broken down using trial and error across infinite configurations."], 1, "Solvability requires a finite sequence of exact instructions that terminates cleanly for every valid input."],
+["Who mathematically proved in 1936 that a universal mechanical procedure cannot determine the truth or falsehood of all mathematical statements?", ["David Hilbert","George Pólya","Alan Turing","Donald Knuth"], 2, "Alan Turing modeled computation via the abstract Turing machine to formalize limits on computability."],
+["The Halting Problem is a classic example of what type of problem?", ["Tractable polynomial problem","Unsolvable (undecidable) problem","Non-overlapping routine problem","Brute-force linear problem"], 1, "The Halting Problem is provably undecidable."],
+["A problem is defined as \"tractable\" if its running time scales as a:", ["Polynomial function of the size of the input","Exponential function of the size of the input","Factorial function of the size of the input","Monotonic infinite sequence function"], 0, "Polynomial runtimes scale in a manner that matches physical hardware resources efficiently."],
+["The Traveling Salesman Problem (TSP) using exact dynamic programming scales at O(n²2ⁿ). This makes it computationally:", ["Linear and highly tractable","Intractable for large values of n","Undecidable for all integer inputs","Purely routine and solvable in zero steps"], 1, "Exponential scaling means operation counts rapidly exceed realistic timeframes."],
+["What is a \"heuristic\"?", ["A mathematically rigorous sequence that guarantees a global optimum.","An experience-based shortcut that provides a good enough answer within reasonable limits.","A hardware setup designed to prevent processor overheating.","A construct that loops indefinitely to track network data streams."], 1, "Heuristics trade guaranteed perfection for rapid, useful performance."],
+["Which of the following is NOT one of Donald Knuth's five essential properties of a true algorithm?", ["Finiteness","Definiteness","Effectiveness","Stochasticity"], 3, "Algorithms must be deterministic and finite; stochastic patterns introduce unpredictable termination."],
+["The statement \"choose a large number\" inside a set of program instructions violates which essential algorithmic property?", ["Definiteness","Input","Finiteness","Output"], 0, "Definiteness demands unambiguous terms; \"large number\" is subjective."],
+["Filtering out unnecessary details to focus on the essential features and structure of a problem is called:", ["Reduction","Abstraction","Brainstorming","Lateral thinking"], 1, "Abstraction hides complex details, preventing mental overload."],
+["Solving a new problem by mapping its structural relationships to a previously solved domain is known as using:", ["Analogy","Trial and error","Root cause analysis","Stepwise refinement"], 0, "Analogy matches relational frameworks across domains to solve the unfamiliar."],
+["What is the fundamental core rule during the generation phase of a Brainstorming session?", ["Critical judgment must be aggressively enforced immediately.","Only practical, low-cost ideas can be recorded.","Judgment and criticism must be completely suspended.","A final algorithm must be written out on the spot."], 2, "Suspending judgment decouples idea generation from logical assessment."],
+["Formulating a falsifiable conjecture and checking predictions using a controlled test describes:", ["Random trial and error","Hypothesis testing","Morphological box generation","Means-end structuring"], 1, "Hypothesis testing brings scientific discipline to diagnostics."],
+["Transforming problem A into problem B where the solution to B is exactly known is known as:", ["Under-abstraction","Deletion","Reduction","Lateral shifting"], 2, "Reduction transforms the target scenario to inherit the mechanics of known algorithmic workhorses."],
+["Edward de Bono introduced which creative paradigm that challenges unspoken logical steps and approaches problems from unexpected angles?", ["Means-end analysis","Lateral thinking","Deductive logic","Fault tree analytics"], 1, "Lateral thinking targets baseline assumptions to yield fresh avenues."],
+["The Tower of Hanoi puzzle is most elegantly planned using which state-space reduction framework?", ["Method of focal objects","Morphological analysis","Means-end analysis","Root cause analysis"], 2, "Means-end analysis recursively generates action parameters (operators) to clear obstacles between current and goal states."],
+["The Zwicky Box or Morphological Box is designed primarily to:", ["Run multi-threaded parallel brute-force script trials.","Systematically explore all theoretical parameter combinations of a multi-dimensional problem.","Document variable stacks for a recursive loop execution.","Profile processor speed and RAM capacities."], 1, "Morphological Boxes map multiple design parameters comprehensively."],
+["The \"5 Whys\" technique is a diagnostic framework utilized to achieve what goal?", ["Writing five independent loop assertions.","Identifying process-level root causes rather than merely treating surface symptoms.","Eliciting five specific stakeholders for registration platforms.","Reviewing complexity values five separate times."], 1, "Peeling back causal layers isolates underlying systemic flaws."],
+["Breaking a complex monolithic problem down into instances of the same type, recursively solving them, and merging outcomes characterizes:", ["Hypothesis testing","Divide and conquer","Fault tree sorting","Inductive verification"], 1, "Divide and conquer breaks massive domains into atomic fragments before reconstructing total solutions."],
+["Who authored the seminal 1945 framework \"How to Solve It\", outlining the four-step process (Understand, Devise a Plan, Carry Out, Look Back)?", ["Donald Knuth","Alan Turing","George Pólya","Fritz Zwicky"], 2, "George Pólya outlined the classic problem-solving cycle used across computer science."],
+["In flowchart design, which standard shape represents a selection or branch point condition?", ["Rectangle","Oval","Parallelogram","Diamond"], 3, "The decision diamond maps branching logical forks, labeling paths like Yes/No."],
+["Which metric is used in Big O notation to define an algorithmic runtime that grows linearly based on an input size n?", ["O(1)","O(n)","O(n log n)","O(n²)"], 1, "Linear scaling means processing steps scale sequentially on a 1:1 basis relative to data size."],
+["Euclid's historical algorithm is used specifically to compute which mathematical value between two positive integers?", ["Least Common Multiple (LCM)","Greatest Common Divisor (GCD)","Polynomial Root Factors","Semi-prime Exponential Scales"], 1, "Euclid's algorithm calculates the largest shared factor that divides two integers without remainder."],
+["Binary Search operates within an optimal linearithmic/logarithmic framework. What structural condition must be true for the input array prior to execution?", ["The elements must be completely unique.","The data array must be pre-sorted.","The array must contain exactly 10,000 nodes.","The capacity of the array must be an exponential power of 2."], 1, "Binary Search uses mid-point forks, requiring sorted elements to safely drop unpromising halves."],
+["An algorithm that builds a total solution by always selecting the option that is locally optimal at that precise execution step is known as what kind of approach?", ["Backtracking Algorithm","Greedy Algorithm","Post-test Inductive Branch","Alpha-beta Pruning Framework"], 1, "Greedy engines grab the most attractive localized step immediately, though global success isn't always guaranteed."],
+["Which abstract data structure behaves like a physical pile of plates, restricting additions and removals exclusively via push, pop, and peek operations at the top?", ["Queue","Tree","Stack","Matrix Grid"], 2, "Stacks maintain Last-In, First-Out (LIFO) layouts, forcing updates through a single top portal."],
+["What type of control loop pattern assesses its branching execution criteria explicitly at the end of the loop block execution?", ["Pre-test loop (While-do)","Post-test loop (Repeat-until / Do-while)","Counter-controlled loop (For-to)","Sentinel-controlled exit"], 1, "Post-test structures execute the code block first, ensuring at least one run happens before checking criteria."],
+["According to standard ANSI flowchart design specifications, what structural element is allowed to have exactly one entry path but two or more distinct labeled exit paths?", ["Process Rectangle","Decision Diamond","Terminal Oval","Input/Output Parallelogram"], 1, "Diamonds house conditional evaluations, branching into separate paths like Yes/No."],
+["If an algorithmic specification statement includes an expression layout such as \"result ← result * i\", what does the left arrow symbol represent?", ["Logical comparison for equality","Pointer redirection tracking","Variable value assignment","Dynamic memory allocation size"], 2, "The left arrow maps the right-hand evaluation value directly into the left target variable slot."],
+["Which formal notation layout focuses entirely on displaying combinations of conditions and matching outcomes in a grid, rather than highlighting control flow sequence?", ["Flowchart Structure","Decision Table","Pseudocode Script","Natural Language Level 0 Model"], 1, "Decision tables drop procedural step details to cleanly highlight combinations of variables and actions."],
+["When an engineering process iteratively transforms a problem statement step-by-step from an abstract natural description down to a detailed algorithmic plan, it uses:", ["Lateral Shifting","Stepwise Refinement (Top-down design)","Morphological Expansion","Brute-force Optimization"], 1, "Stepwise refinement parses complex ideas from high-level summaries into concrete, machine-ready steps."],
+["In modern exception handling blocks, what block is structurally guaranteed to execute its contents regardless of whether an exception was thrown or caught?", ["Try block","Catch block","Finally block","Module block"], 2, "The finally block always runs, ideal for critical cleanup tasks like closing database connections."],
+["A computational function that establishes its logic by calling itself within its own block execution code is explicitly categorized as:", ["Stochastic Loop","Recursive Function","Decidable Matrix","Exception Driver"], 1, "Recursion splits operations by triggering sub-instances of the same function until reaching a base case."],
+["When a developer builds code that returns an error because a reference variable points to \"Nothing\" or an uninstantiated object slot, what exception type occurs?", ["IOException","NullReferenceException","IndexOutOfRangeException","DivideByZeroException"], 1, "Accessing members of a variable containing \"Nothing\" throws a NullReferenceException."],
+["What is the standard programmatic rule for choosing when an algorithm should explicitly execute a \"Throw\" command to initiate a custom exception?", ["At the exact instant every counter-controlled iteration terminates cleanly.","Only when the function determines it cannot achieve its predefined core functionality.","Right before returning an expected valid function evaluation value.","Every time a user requests an interactive console interface menu array."], 1, "Exceptions signal that a component cannot perform its main job, avoiding unnecessary control flow pollution."],
+["In software design, what guiding architectural strategy is explicitly abbreviated as the \"KISS principle\"?", ["Keep It Simple, Stupid / Straightforward","Kernel Integrated System Security","Key Instance Selection Scheme","Knuth Iterative Search Solution"], 0, "The KISS principle highlights simplicity, making logic easier to read, verify, and maintain."],
+["If a decision table structure contains 4 independent binary true/false condition fields, what is the maximum possible number of logical rules or combinations that can be generated?", ["4 rules","8 rules","16 rules","32 rules"], 2, "Every independent binary criteria row scales options exponentially as 2 raised to the number of choices (2⁴ = 16)."],
+["The process of testing software logic by evaluating explicit system behavioral requirements across thousands of automated randomized inputs describes:", ["Formal Proof Validation","Property-based Testing","Decision Tree Refinement","Stepwise Natural Language Documentation"], 1, "Property-based testing uses structural assertions across randomized data to flush out hidden corner cases."],
+["What structural weakness makes standard natural conversational text processing risky or disadvantageous as a core design tool for advanced structural algorithms?", ["It does not provide any structural documentation capability.","It is inherently ambiguous and vulnerable to subjective interpretation mistakes.","It cannot express basic input or output operations.","It demands highly restrictive compiler syntax layout constraints."], 1, "Human language contains vague terms, making it risky for machines that require absolute precision."],
+["In a standard multi-way branch selection block using pseudocode, what keyword specifies the catch-all execution route if no matching parameter values are satisfied?", ["OTHERWISE / ELSE","CASE OF","ENDIF","RETURN NULL"], 0, "The OTHERWISE or ELSE clause handles fallback steps if no explicit criteria are met."],
+["Under the standard layered network models (like TCP/IP), which layers handle specialized application communication without managing the physical encoding of bits over hardware lines?", ["Application Layer (HTTP, SMTP)","Physical Hardware Layer","Data Link Layer","Network Interconnect Routing Layer"], 0, "Abstraction layers encapsulate tasks so application scripts do not need to manage low-level bit transmission."],
+["Which sorting method operates by finding the smallest item in an array, swapping it with the first index, and repeating the check across the remaining sub-array slices?", ["Exponential Factorial Sort","Selection Sort","Infinite Backtracking Merge","Alpha-Beta Pruning Filter"], 1, "Selection Sort systematically scans arrays, moving the minimum element to the front step by step."],
+["When a human interface mimics real-world operations by letting a user drop a file icon into an image of a recycling bin while hiding disk block allocation table rewrites, it is applying:", ["Analogous Reduction","User Interface Abstraction","Hypothesis Exploration","Non-deterministic Factorization"], 1, "Desktop metaphors provide clean, high-level views while hiding low-level details like disk sector manipulation."],
+["What computational issue is encountered when a multidimensional Zwicky Box parameter configuration grows too large, rendering complete manual checks impossible?", ["Null Reference Error","Combinatorial Explosion","Decidable Tractability Drop","Inductive Property Inversion"], 1, "Adding parameters causes a combinatorial explosion, making complete manual analysis impractical."],
+["In algorithmic terminology, if a proposed solution can be verified for correctness quickly within polynomial constraints, the overarching problem belongs to which class?", ["P class only","NP class","Undecidable class","Exponentially Solved group"], 1, "The NP class includes problems whose solutions are hard to find but can be verified quickly in polynomial time."],
+["A loop construct that reads input data and terminates its execution only when a specific placeholder value (such as -1) is supplied is known as what type of loop?", ["Counter-controlled loop","Sentinel-controlled loop","Infinite recursive loop","Post-test condition branch"], 1, "Sentinels serve as signal markers, notifying data streams when to stop execution safely."]
+];
+
+let state = {
+  screen: 'setup',
+  numQuestions: 15,
+  timeMinutes: 15,
+  instantAnswer: false,
+  questions: [],
+  current: 0,
+  answers: [],
+  timeLeft: 0,
+  timerId: null,
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+const app = document.getElementById('app');
+
+function render(){
+  if(state.screen==='setup') renderSetup();
+  else if(state.screen==='exam') renderExam();
+  else if(state.screen==='results') renderResults();
+}
+
+function renderSetup(){
+  const qCounts = [10,15,20,30];
+  const times = [5,10,15,20,30];
+  app.innerHTML = `
+    <div class="eyebrow">COS102 :: Problem Solving</div>
+    <h1>Exam Setup Routine</h1>
+    <div class="sub">Configure the two parameters below, then run the exam. Questions are pulled at random from an 80-item bank spanning problem-solving theory, algorithms, and computational thinking.</div>
+
+    <div class="flow">
+      <div class="node">
+        <div class="node-label"><span class="tag"></span>Set parameter: question count</div>
+        <div class="option-grid" id="qgrid">
+          ${qCounts.map(n=>`<button class="pill ${state.numQuestions===n?'active':''}" data-q="${n}">${n}<small>questions</small></button>`).join('')}
+        </div>
+        <div class="custom-row">
+          <input type="number" id="qcustom" min="1" max="${BANK.length}" placeholder="custom" value="${qCounts.includes(state.numQuestions)?'':state.numQuestions}">
+          <label>1&ndash;${BANK.length} available</label>
+        </div>
+      </div>
+
+      <div class="connector"></div>
+
+      <div class="node">
+        <div class="node-label"><span class="tag"></span>Set parameter: time limit</div>
+        <div class="option-grid" id="tgrid">
+          ${times.map(t=>`<button class="pill ${state.timeMinutes===t?'active':''}" data-t="${t}">${t}<small>minutes</small></button>`).join('')}
+        </div>
+        <div class="custom-row">
+          <input type="number" id="tcustom" min="1" max="180" placeholder="custom" value="${times.includes(state.timeMinutes)?'':state.timeMinutes}">
+          <label>minutes, no cap</label>
+        </div>
+      </div>
+
+      <div class="connector"></div>
+
+      <div class="node">
+        <div class="node-label"><span class="tag"></span>Set parameter: instant answer mode</div>
+        <div class="toggle-row" id="igrid">
+          <button class="pill ${!state.instantAnswer?'active':''}" data-i="0">Off<small>review at the end</small></button>
+          <button class="pill ${state.instantAnswer?'active':''}" data-i="1">On<small>reveal after each pick</small></button>
+        </div>
+      </div>
+
+      <div class="connector"></div>
+
+      <div class="node">
+        <div class="node-label"><span class="tag"></span>Begin execution</div>
+        <div class="sub" style="margin-bottom:0;font-size:14px;">Running <b id="summaryQ">${state.numQuestions}</b> question(s) against a <b id="summaryT">${state.timeMinutes}</b>-minute clock${state.instantAnswer?' &middot; <b>instant answers on</b>':''}. The exam auto-submits when time runs out.</div>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn">Run exam <span class="arrow">&#8594;</span></button>
+    <div class="meta-note">Answers and rationale are shown after submission or timeout.</div>
+  `;
+
+  document.querySelectorAll('#qgrid .pill').forEach(btn=>{
+    btn.onclick = ()=>{ state.numQuestions = parseInt(btn.dataset.q); document.getElementById('qcustom').value=''; renderSetup(); };
+  });
+  document.querySelectorAll('#tgrid .pill').forEach(btn=>{
+    btn.onclick = ()=>{ state.timeMinutes = parseInt(btn.dataset.t); document.getElementById('tcustom').value=''; renderSetup(); };
+  });
+  document.getElementById('qcustom').oninput = (e)=>{
+    const v = parseInt(e.target.value);
+    if(v>0 && v<=BANK.length){ state.numQuestions=v; document.getElementById('summaryQ').textContent=v; }
+  };
+  document.getElementById('tcustom').oninput = (e)=>{
+    const v = parseInt(e.target.value);
+    if(v>0){ state.timeMinutes=v; document.getElementById('summaryT').textContent=v; }
+  };
+  document.querySelectorAll('#igrid .pill').forEach(btn=>{
+    btn.onclick = ()=>{ state.instantAnswer = btn.dataset.i==='1'; renderSetup(); };
+  });
+  document.getElementById('runBtn').onclick = startExam;
+}
+
+function startExam(){
+  const n = Math.min(state.numQuestions, BANK.length);
+  state.questions = shuffle(BANK).slice(0, n);
+  state.current = 0;
+  state.answers = new Array(n).fill(null);
+  state.timeLeft = state.timeMinutes*60;
+  state.screen = 'exam';
+  render();
+  state.timerId = setInterval(()=>{
+    state.timeLeft--;
+    if(state.timeLeft<=0){
+      clearInterval(state.timerId);
+      finishExam();
+    } else {
+      updateTimerDisplay();
+    }
+  },1000);
+}
+
+function updateTimerDisplay(){
+  const el = document.getElementById('timerDisplay');
+  if(!el) return;
+  const m = Math.floor(state.timeLeft/60);
+  const s = state.timeLeft%60;
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('warn', state.timeLeft<=30);
+}
+
+function renderExam(){
+  const q = state.questions[state.current];
+  const selected = state.answers[state.current];
+  const letters = ['A','B','C','D'];
+  const showFeedback = state.instantAnswer && selected!==null;
+  const isCorrect = selected===q[2];
+
+  app.innerHTML = `
+    <div class="exam-header">
+      <div class="eyebrow" style="margin-bottom:0;">Question ${state.current+1} / ${state.questions.length}</div>
+      <div class="timer" id="timerDisplay">--:--</div>
+    </div>
+    <div class="progress-trail">
+      ${state.questions.map((_,i)=>`<div class="dot ${state.answers[i]!==null?'answered':''} ${i===state.current?'current':''}"></div>`).join('')}
+    </div>
+    <div class="qcard">
+      <div class="qnum">ITEM ${state.current+1}</div>
+      <div class="qtext">${q[0]}</div>
+      <div class="choices">
+        ${q[1].map((opt,i)=>{
+          let cls = 'choice';
+          if(selected===i) cls += ' selected';
+          if(showFeedback){
+            if(i===q[2]) cls += ' correct-instant';
+            else if(i===selected) cls += ' wrong-instant';
+          }
+          return `
+          <div class="${cls}" data-i="${i}">
+            <span class="letter">${letters[i]}</span>
+            <span class="txt">${opt}</span>
+          </div>
+        `;}).join('')}
+      </div>
+      ${showFeedback ? `
+        <div class="instant-feedback ${isCorrect?'is-correct':'is-wrong'}">
+          <span class="tag">${isCorrect?'CORRECT':'INCORRECT'}</span>
+          ${!isCorrect?`<div class="correct-line">Correct answer: <b>${letters[q[2]]}. ${q[1][q[2]]}</b></div>`:''}
+          ${q[3]?`<div class="explain">${q[3]}</div>`:''}
+        </div>
+      ` : ''}
+    </div>
+    <div class="nav-row">
+      <button class="ghost-btn" id="prevBtn" ${state.current===0?'disabled':''}>&#8592; Previous</button>
+      ${state.current===state.questions.length-1
+        ? `<button class="run-btn" style="margin-top:0;width:auto;padding:14px 26px;" id="submitBtn">Submit exam</button>`
+        : `<button class="ghost-btn" id="nextBtn">Next &#8594;</button>`
+      }
+    </div>
+  `;
+  updateTimerDisplay();
+
+  document.querySelectorAll('.choice').forEach(c=>{
+    c.onclick = ()=>{
+      state.answers[state.current] = parseInt(c.dataset.i);
+      renderExam();
+    };
+  });
+  const prevBtn = document.getElementById('prevBtn');
+  if(prevBtn) prevBtn.onclick = ()=>{ state.current--; renderExam(); };
+  const nextBtn = document.getElementById('nextBtn');
+  if(nextBtn) nextBtn.onclick = ()=>{ state.current++; renderExam(); };
+  const submitBtn = document.getElementById('submitBtn');
+  if(submitBtn) submitBtn.onclick = ()=>{ clearInterval(state.timerId); finishExam(); };
+}
+
+
+function finishExam(){
+  state.screen = 'results';
+  render();
+}
+
+function renderResults(){
+  const total = state.questions.length;
+  let correct = 0;
+  state.questions.forEach((q,i)=>{ if(state.answers[i]===q[2]) correct++; });
+  const pct = Math.round((correct/total)*100);
+  let verdict = 'Needs revision';
+  if(pct>=80) verdict = 'Strong pass';
+  else if(pct>=60) verdict = 'Solid pass';
+  else if(pct>=40) verdict = 'Borderline';
+
+  const letters = ['A','B','C','D'];
+
+  app.innerHTML = `
+    <div class="eyebrow">COS102 :: Result Printout</div>
+    <h1>Exam Complete</h1>
+    <div class="score-block">
+      <div class="score-num">${pct}%</div>
+      <div class="score-frac">${correct} / ${total} correct &middot; ${state.timeMinutes} min limit</div>
+      <div class="score-verdict">${verdict}</div>
+    </div>
+    <div id="reviewList">
+      ${state.questions.map((q,i)=>{
+        const user = state.answers[i];
+        const isCorrect = user===q[2];
+        return `
+          <div class="review-item">
+            <div class="qnum">ITEM ${i+1}</div>
+            <div class="qtext">${q[0]}</div>
+            <div class="review-line">
+              <span class="tag ${isCorrect?'correct':'wrong'}">${isCorrect?'CORRECT':'YOUR ANSWER'}</span>
+              <span>${user!==null? letters[user]+'. '+q[1][user] : 'No answer selected'}</span>
+            </div>
+            ${!isCorrect?`<div class="review-line"><span class="tag info">ANSWER</span><span>${letters[q[2]]}. ${q[1][q[2]]}</span></div>`:''}
+            ${q[3]?`<div class="explain">${q[3]}</div>`:''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <button class="restart-btn" id="restartBtn">Run another exam</button>
+  `;
+  document.getElementById('restartBtn').onclick = ()=>{
+    state = { screen:'setup', numQuestions: state.numQuestions, timeMinutes: state.timeMinutes, instantAnswer: state.instantAnswer, questions:[], current:0, answers:[], timeLeft:0, timerId:null };
+    render();
+  };
+}
+
+render();
+</script>
+<div style="width:100%;max-width:760px;margin:24px auto 0;padding:12px 16px;border:1.5px solid #c98f30;background:rgba(242,169,59,0.1);color:#F2A93B;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.04em;text-align:center;box-sizing:border-box;">
+  Note: These questions are extensively derived and based on the material provided by the lecturer (Problem Solving)
+</div>
+</body>
+</html>
+
